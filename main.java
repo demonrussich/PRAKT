@@ -1,3 +1,4 @@
+package com.company;
 import com.company.models.Cours;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
