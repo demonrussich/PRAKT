@@ -1,0 +1,13 @@
+package com.company;
+
+import com.company.models.Cours;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface CoursesRepository {
+    List<Cours> findByName(String name);
+    Optional<Cours> findById(Integer id);
+    void save(Cours cours);
+    void update(Integer id, Cours cours);
+}
