@@ -1,0 +1,88 @@
+package com.company;
+
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.core.ResultSetExtractor;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+import com.company.models.Cours;
+
+import javax.sql.DataSource;
+import java.sql.*;
+import java.util.*;
+import java.util.function.Function;
+
+
+public class CoursesRepositoryJdbcTemplateImpl implements CoursesRepository {
+
+    //language=SQL
+    private static final String SQL_SELECT_BY_ID = "select id, name, date_start,date_end from cours where id = ?";
+    //language=SQL
+    private static final String SQL_SELECT_BY_NAME = "select * from cours where name = ?";
+    //language=SQL
+    private static final String SQL_UPDATE_BY_ID = "update cours set id=?, name = ?, date_start = ?, date_end = ? where id = ?";
+    //language=SQL
+    private static final String SQL_COURSES_INSERT = "insert into cours(name, date_start, date_end) values (?, ?, ?)";
+
+    //language=SQL
+    private static final String SQL_SELECT_ALL_WITH_LESSONS = "select * from cours left join lesson l on cours.id = l.own_cours";
+    private JdbcTemplate jdbcTemplate;
+
+    public CoursesRepositoryJdbcTemplateImpl(DataSource dataSource) {
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
+    }
+
+    private final RowMapper<Cours> courseRowMapper = (row, rowNumber) -> {
+        int id = row.getInt("id");
+        String name = row.getString("name");
+        String dateOfStart = row.getString("date_start");
+        String dateOfEnd = row.getString("date_end");
+        Cours cours = new Cours(id, name, dateOfStart, dateOfEnd);
+        return cours;
+    };
+
+    @Override
+    public List<Cours> findByName(String name) {
+        return jdbcTemplate.query(SQL_SELECT_BY_NAME, courseRowMapper, name);
+    }
+
+    @Override
+    public Optional<Cours> findById(Integer id) {
+        try {
+            return Optional.of(jdbcTemplate.queryForObject(SQL_SELECT_BY_ID, courseRowMapper, id));
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
+    }
+
+
+    @Override
+    public void save(Cours cours) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            PreparedStatement statement = connection.prepareStatement(SQL_COURSES_INSERT, new String[]{"id"});
+            statement.setString(1, cours.getName());
+            statement.setString(2, cours.getDate_start());
+            statement.setString(3, cours.getDate_end());
+            return statement;
+        }, keyHolder);
+        cours.setId(keyHolder.getKey().intValue());
+    }
+
+    @Override
+    public void update(Integer id, Cours cours) {
+        jdbcTemplate.update(connection -> {
+            PreparedStatement statement = connection.prepareStatement(SQL_UPDATE_BY_ID);
+            statement.setInt(1, cours.getId());
+            statement.setString(2, cours.getDate_start());
+            statement.setString(3, cours.getDate_end());
+            statement.setInt(4, id);
+            return statement;
+        });
+    }
+
+
+}
